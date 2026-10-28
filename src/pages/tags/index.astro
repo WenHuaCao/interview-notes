@@ -1,0 +1,7 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+import { catalog, tags, href } from '../../lib/catalog';
+const { active, demo } = await catalog();
+---
+<Layout title="标签索引" active="tags"><header class="page-heading"><p class="eyebrow">DIFFERENT QUESTIONS. CONNECTED IDEAS.</p><h1>换一条线索，<br />重新认识这些问题。</h1><p>把零散的提问连成知识脉络，沿着一个标签深入回忆。</p>{demo && <span class="demo-label">当前展示示例标签</span>}</header><div class="tag-grid">{tags.map((tag, i) => <a class="topic-card" href={href(`tags/${tag.id}/`)}><div class="topic-card-top"><span>{String(i + 1).padStart(2, '0')} / TOPIC</span><Icon name="tag" size={20} /></div><h2>{tag.label}</h2><p>{tag.description}</p><div class="topic-card-bottom"><span>{active.filter(post => post.data.tags.includes(tag.id)).length} 道{demo ? '示例题' : '提问'}</span><Icon name="arrow" /></div></a>)}</div><div class="quiet-note"><Icon name="spark" /><p>同义标签会在定时整理时归并。标签带你找到相关问题，时间线保留每次提问的原始顺序。</p></div></Layout>

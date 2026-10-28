@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { tags } from '../lib/catalog';
+---
+<Layout title="搜索提问"><header class="page-heading"><p class="eyebrow">FIND THE QUESTION YOU ONCE ASKED</p><h1>那个问题，<br />你曾经问过。</h1><p>搜一个关键词，把记忆中的那条线索找回来。</p></header><section class="search-shell" data-pagefind-ignore><form class="search-form" id="search-form" role="search"><Icon name="search" /><label class="sr-only" for="search-input">搜索问题和回答</label><input id="search-input" name="q" type="search" placeholder="搜索问题、回答中的关键词…" maxlength="200" autocomplete="off" /><button type="submit">搜索</button></form><div class="search-tools"><span class="muted">在题目与完整回答中搜索</span><label class="sr-only" for="search-tag">限定标签</label><select id="search-tag"><option value="">所有标签</option>{tags.map(tag => <option value={tag.label}>{tag.label}</option>)}</select></div><div class="search-hints"><span>试着找找</span>{['闭包', '事件循环', 'HTTP 缓存', '索引'].map(term => <button type="button" data-search-term={term}>{term} ↗</button>)}</div><p class="search-status" id="search-status" role="status" aria-live="polite">输入关键词，开始寻找。</p><div id="search-results"></div><noscript><p class="review-warning">全文搜索需要 JavaScript。你仍可以通过时间归档和标签索引浏览所有记录。</p></noscript></section><script>
+import { href } from '../lib/urls';
+const form = document.querySelector<HTMLFormElement>('#search-form')!;
+const input = document.querySelector<HTMLInputElement>('#search-input')!;
+const select = document.querySelector<HTMLSelectElement>('#search-tag')!;
+const status = document.querySelector<HTMLElement>('#search-status')!;
+const results = document.querySelector<HTMLElement>('#search-results')!;
+let sequence = 0;
+let timer: ReturnType<typeof setTimeout>;
+type SearchData = { url: string; excerpt: string; meta: { title?: string } };
+let pagefind: { search: (query: string, options: object) => Promise<{ results: { data: () => Promise<SearchData> }[] }> };
+async function search() {
+  const current = ++sequence;
+  const query = input.value.trim();
+  results.replaceChildren();
+  if (!query) { status.textContent = '输入关键词，开始寻找。'; return; }
+  status.textContent = '正在寻找相关记录…';
+  const url = new URL(location.href); url.searchParams.set('q', query);
+  history.replaceState(null, '', url);
+  try {
+    pagefind ??= await import(/* @vite-ignore */ href('pagefind/pagefind.js'));
+    const response = await pagefind.search(query, { filters: select.value ? { tag: select.value } : {} });
+    const data = await Promise.all(response.results.slice(0, 30).map(result => result.data()));
+    if (current !== sequence) return;
+    status.textContent = data.length ? `找到 ${response.results.length} 条相关记录${response.results.length > 30 ? '，展示前 30 条' : ''}` : '暂时没有找到。试试更短的关键词，或切换标签。';
+    for (const item of data) {
+      const link = document.createElement('a');
+      const destination = new URL(item.url, location.origin);
+      if (destination.origin !== location.origin) continue;
+      link.href = destination.href; link.className = 'search-result';
+      const title = document.createElement('h2'); title.textContent = item.meta.title ?? '查看记录';
+      const excerpt = document.createElement('p'); excerpt.textContent = item.excerpt.replace(/<[^>]*>/g, '').replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&#39;', "'").replaceAll('&quot;', '"');
+      link.append(title, excerpt); results.append(link);
+    }
+  } catch { if (current === sequence) status.textContent = '搜索索引尚未就绪。请稍后刷新，或先使用标签索引。'; }
+}
+form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(timer); void search(); });
+input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 220); });
+select.addEventListener('change', () => { clearTimeout(timer); void search(); });
+document.querySelectorAll<HTMLButtonElement>('[data-search-term]').forEach(button => button.addEventListener('click', () => { input.value = button.dataset.searchTerm!; void search(); input.focus(); }));
+input.value = new URLSearchParams(location.search).get('q')?.slice(0, 200) ?? '';
+if (input.value) void search();
+</script></Layout>

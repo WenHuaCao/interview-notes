@@ -1,0 +1,6 @@
+interface:
+  display_name: "拾问 · 面试问答归档"
+  short_description: "记录完整面试问答与后续追问，按时间归档并整理标签，支持回忆复习"
+  default_prompt: "使用 $interview-journal 回答这道面试题，并把问题和完整回答保存到拾问题库。"
+policy:
+  allow_implicit_invocation: true

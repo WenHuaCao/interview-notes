@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { href, catalog } from '../lib/catalog';
+interface Props { title?: string; description?: string; active?: string }
+const { title = '问过的，都能再想起来', description = '拾问：记录面试中的每一次提问，用时间、标签和主动回忆，把答案变成自己的知识。', active = '' } = Astro.props;
+const { active: posts } = await catalog();
+const ids = posts.map(post => post.data.id);
+const nav = [{ key: 'home', label: '时间线', path: '' }, { key: 'tags', label: '标签索引', path: 'tags/' }, { key: 'archive', label: '时间归档', path: 'archive/' }];
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f7f7f2" />
+    <link rel="icon" type="image/svg+xml" href={href('favicon.svg')} />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <title>{title} · 拾问</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+    <header class="site-header" data-pagefind-ignore>
+      <div class="header-inner">
+        <a href={href()} class="brand" aria-label="拾问首页"><span class="brand-mark"><Icon name="book" size={22} /></span><span>拾问<small>INTERVIEW NOTES</small></span></a>
+        <nav aria-label="主导航">{nav.map(item => <a href={href(item.path)} aria-current={active === item.key ? 'page' : undefined}>{item.label}</a>)}</nav>
+        <div class="header-actions"><a href={href('search/')} class="search-link" aria-label="搜索面试题"><Icon name="search" /><span>搜索</span></a><a class="nav-review" href={href('review/')} aria-current={active === 'review' ? 'page' : undefined}><Icon name="repeat" size={16} /><span>今日回忆</span><b data-due-count>{ids.length}</b></a></div>
+      </div>
+    </header>
+    <main id="main" class="site-main"><slot /></main>
+    <footer class="site-footer" data-pagefind-ignore><div><a href={href()} class="footer-brand">拾问<span>每一次追问，都算数。</span></a><p>问答留在 GitHub，回忆发生在这里。</p></div><div class="footer-links"><a href={href('guide/')}>记录指南</a><a href="https://github.com/WenHuaCao/interview-notes" target="_blank" rel="noopener noreferrer">GitHub <Icon name="arrow" size={13} /></a><span>复习进度仅存于当前浏览器</span></div></footer>
+    <script id="question-ids" type="application/json" set:html={JSON.stringify(ids)} />
+    <script>
+      import { readProgress, isDue, STORAGE_KEY } from '../lib/review.mjs';
+      function refreshCount() {
+        try {
+          const ids: string[] = JSON.parse(document.querySelector('#question-ids')!.textContent!);
+          const progress = readProgress(window.localStorage);
+          const count = ids.filter(id => isDue(progress.entries[id])).length;
+          document.querySelectorAll('[data-due-count]').forEach(el => { el.textContent = String(count); });
+        } catch { /* The review page explains unavailable or damaged storage. */ }
+      }
+      refreshCount();
+      window.addEventListener('review-change', refreshCount);
+      window.addEventListener('storage', event => { if (event.key === STORAGE_KEY) refreshCount(); });
+    </script>
+  </body>
+</html>

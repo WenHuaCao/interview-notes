@@ -1,0 +1,74 @@
+import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+test('首页标明示例与真实记录，并支持桌面和手机布局', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('想起来');
+  await expect(page.getByText('示例预览', { exact: true })).toBeVisible();
+  await expect(page.getByText('道真实记录')).toBeVisible();
+  await expect(page.locator('.question-card')).toHaveCount(5);
+  fs.mkdirSync('.cache/screenshots', { recursive: true });
+  await page.screenshot({ path: '.cache/screenshots/home-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('link', { name: '今日回忆', exact: false }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '.cache/screenshots/home-mobile.png', fullPage: true });
+  expect(errors).toEqual([]);
+});
+test('归档按月份、标签筛选和详情链接均可访问', async ({ page }) => {
+  await page.goto('archive/');
+  await expect(page.locator('.archive-month')).toHaveCount(2);
+  await page.getByRole('link', { name: '闭包为什么能记住函数外部的变量？', exact: true }).click();
+  await expect(page.locator('.original-question')).toContainText('什么是 JavaScript 闭包');
+  await expect(page.locator('.prose pre')).toContainText('createCounter');
+  await page.goto('tags/javascript/');
+  await expect(page.locator('.question-card')).toHaveCount(2);
+  await page.goto('guide/');
+  await expect(page.getByText('这段说明本身不会创建定时任务。', { exact: false })).toBeVisible();
+});
+test('中文全文搜索可用，结果使用正确的子路径，标签过滤生效', async ({ page }) => {
+  await page.goto('search/');
+  await page.getByRole('searchbox').fill('闭包');
+  await expect(page.locator('#search-results a')).toHaveCount(1, { timeout: 15000 });
+  await expect(page.locator('#search-results a').first()).toHaveAttribute('href', /\/interview-notes\/questions\/demo-closure\//);
+  await page.locator('#search-tag').selectOption('数据库');
+  await expect(page.locator('#search-status')).toContainText('暂时没有找到');
+  await expect(page.locator('#search-results a')).toHaveCount(0);
+});
+test('回忆必须先展开答案，进度持久化、导出和导入可用', async ({ page }) => {
+  await page.goto('review/?id=demo-closure');
+  const card = page.locator('[data-card-id="demo-closure"]');
+  await expect(card).toBeVisible();
+  const remember = page.getByRole('button', { name: '记住了' });
+  await expect(remember).toBeDisabled();
+  await card.locator('summary').click();
+  await expect(remember).toBeEnabled();
+  await remember.click();
+  await expect(page.locator('#review-feedback')).toContainText('已记录这次回忆');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('interview-notes:review:v1')!));
+  expect(saved.entries['demo-closure'].reviews).toBe(1);
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '导出进度' }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toContain('复习进度');
+  await file.saveAs(path.resolve('.cache/review-backup.json'));
+  await page.reload();
+  await expect(page.locator('#review-done')).toHaveText('1');
+  await page.locator('#import-progress').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{bad') });
+  await expect(page.locator('#review-feedback')).toContainText('导入失败');
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('interview-notes:review:v1')!).entries['demo-closure'].reviews)).toBe(1);
+  await page.locator('#import-progress').setInputFiles('.cache/review-backup.json');
+  await expect(page.locator('#review-feedback')).toContainText('已合并 1 条');
+});
+test('损坏的已有进度不会被自动覆盖', async ({ page }) => {
+  await page.goto('review/');
+  await page.evaluate(() => localStorage.setItem('interview-notes:review:v1', '{broken'));
+  await page.reload();
+  await expect(page.locator('#review-warning')).toContainText('已暂停评分');
+  await page.locator('[data-card-id]:visible summary').click();
+  await expect(page.getByRole('button', { name: '记住了' })).toBeDisabled();
+  expect(await page.evaluate(() => localStorage.getItem('interview-notes:review:v1'))).toBe('{broken');
+});

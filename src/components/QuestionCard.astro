@@ -1,0 +1,13 @@
+---
+import Icon from './Icon.astro';
+import { href, formatDate, tagLabel, type Question } from '../lib/catalog';
+interface Props { post: Question; index?: number }
+const { post, index } = Astro.props;
+const sourceLabel = { codex: 'Codex', 'chatgpt-work': 'ChatGPT Work', import: '导入记录' }[post.data.source];
+---
+<article class="question-card">
+  <div class="card-meta"><span><span class="source-dot"></span>{sourceLabel}</span><time datetime={post.data.createdAt}>{formatDate(post.data.createdAt)}</time>{post.data.demo && <span class="demo-label">示例</span>}</div>
+  <h3><a href={href(`questions/${post.data.id}/`)}>{post.data.title}</a></h3>
+  <p class="question-excerpt">{post.data.question}</p>
+  <div class="card-bottom"><div class="tag-list">{post.data.tags.map((tag: string) => <a class="tag" href={href(`tags/${tag}/`)}>{tagLabel(tag)}</a>)}{post.data.tags.length === 0 && <span class="tag">待整理</span>}</div><a class="card-arrow" href={href(`questions/${post.data.id}/`)} aria-label={`阅读：${post.data.title}`}><span class="card-number">{index === undefined ? '' : String(index + 1).padStart(2, '0')}</span><Icon name="arrow" size={18} /></a></div>
+</article>

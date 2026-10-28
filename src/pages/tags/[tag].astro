@@ -1,0 +1,10 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import QuestionCard from '../../components/QuestionCard.astro';
+import { catalog, tags, href } from '../../lib/catalog';
+export function getStaticPaths() { return tags.map(tag => ({ params: { tag: tag.id }, props: { tag } })); }
+const { tag } = Astro.props;
+const { active, demo } = await catalog();
+const posts = active.filter(post => post.data.tags.includes(tag.id));
+---
+<Layout title={tag.label} active="tags"><a class="back-link" href={href('tags/')}>← 标签索引</a><header class="page-heading compact"><p class="eyebrow">A THREAD OF KNOWLEDGE</p><h1>{tag.label}</h1><p>{tag.description}</p><div class="tag-list">{tag.aliases.map(alias => <span class="tag">{alias}</span>)}</div><p class="muted">{posts.length} 道{demo ? '示例题' : '提问'} · 按首次提问时间排序</p></header><div class="narrow-list">{posts.length ? <div class="question-list">{posts.map(post => <QuestionCard post={post} />)}</div> : <div class="empty-state"><h2>这条线索，等待第一个问题。</h2><p>下次归档相关面试题后，会自动出现在这里。</p></div>}</div></Layout>

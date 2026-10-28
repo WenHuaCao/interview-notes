@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { href } from '../lib/catalog';
+const workPrompt = `你是我的面试题助手。只在这个专用项目中记录面试问答，回答后自动公开归档完整问题、回答及后续追问；用户说“不要记录”时跳过。项目配置和闲聊不归档，不读取其他聊天。
+
+使用 GitHub 插件读取 WenHuaCao/interview-notes 仓库 main 分支的 WORKFLOW.md 与 content/tags.json，严格按当前工作流保存问答。新题生成稳定 ID；追问追加原题。更新前读取最新 SHA，冲突时重新读取合并，不覆盖新内容。
+
+我已授权持续公开归档，不必重复询问；平台必要权限仍适用。写入后回读核对，再返回记录链接。不能写入时明确尚未保存，不要声称已经发布。`;
+const schedulePrompt = `请创建云端定时任务“拾问 · 每日标签整理”，每天北京时间 21:00（Asia/Shanghai）运行。
+
+每次通过 GitHub 插件读取 WenHuaCao/interview-notes 的 WORKFLOW.md、content/tags.json 和 content/questions/。执行“每日标签整理”：只处理没有 taggedAt 或 updatedAt 晚于 taggedAt 的真实记录，跳过示例。归并标签、保留 manualTags，并维护标签描述。保留正文、ID、createdAt 和 updatedAt，只更新 tags、taggedAt 及字典。
+
+写入前读取最新 SHA，冲突时重新读取判断；回读验证。无待处理记录时保持安静，不重复提交；有实际结果、失败或需要我操作时才通知。任务不依赖我的本地目录。请确认保存后的时区、下次运行时间和启用状态；无法创建时明确说明。`;
+---
+<Layout title="记录指南"><header class="page-heading"><p class="eyebrow">BUILD A SMALL, LASTING ROUTINE</p><h1>你负责好奇，<br />让问答自己留下来。</h1><p>一次配置，让提问、记录、整理和回忆连接起来。</p></header><div class="guide-layout"><div><section class="guide-block"><h2>01 / 在 Codex 中，直接提问</h2><p>用 Codex 打开本项目即可，支持桌面本地项目模式。项目规则会指引它保存完整问答，同主题追问继续追加。网站不会读取你其他聊天的内容。</p><p>第一次使用时确认 GitHub 已授权这个仓库。只有真正写入并回读成功，才能确认“已归档”；发布完成还需等待 GitHub Actions 构建成功。</p></section><section class="guide-block"><h2>02 / 在 ChatGPT Work 中连接归档</h2><ol><li>在网页版建立专用面试题项目，启用 Work。</li><li>连接 GitHub 插件，授予本仓库读写权限。</li><li>复制以下内容到项目说明；然后试问一道面试题。</li></ol><div class="prompt-box"><pre id="work-prompt">{workPrompt}</pre><button type="button" data-copy="work-prompt">复制项目说明</button><span class="form-status" role="status"></span></div><p>如果当前账户没有项目说明入口，可把它发送到专用 Work 聊天开头；新聊天需再次提供说明。</p></section><section class="guide-block"><h2>03 / 每天 21:00，整理知识线索</h2><p>在已连接 GitHub 的 ChatGPT 网页版 Work 中发送以下提示词。先手动验证一次，再在 Scheduled 中确认任务已启用、时区和下次运行时间正确。</p><div class="prompt-box"><pre id="schedule-prompt">{schedulePrompt}</pre><button type="button" data-copy="schedule-prompt">复制任务提示词</button><span class="form-status" role="status"></span></div><p>这段说明本身不会创建定时任务。网页版云端任务从 GitHub 获取资料，不需要你的电脑保持开机。</p></section><section class="guide-block"><h2>04 / 把答案，变成自己的</h2><p>打开“今日回忆”，先试着作答，再展开答案。按实际感受选择“忘记了”“有些模糊”或“记住了”，系统会安排下一次回忆。</p><p>进度仅存于当前浏览器。更换手机或电脑前请导出备份，在新设备导入即可；清理浏览器数据会移除本地进度。</p><a class="button primary" href={href('review/')}>开始一次回忆 →</a></section></div><aside class="guide-aside"><div><h3>先把这三件事确认好</h3><p>① GitHub 插件可以写入本仓库。</p><p>② 试记一道题，回读与博客发布都成功。</p><p>③ ChatGPT 定时任务已在 Scheduled 中启用并试跑。</p><span class="tag">公开问答 · 本地复习进度</span><p>查看仓库中的 <a href="https://github.com/WenHuaCao/interview-notes/blob/main/WORKFLOW.md">完整工作流</a> 和 <a href="https://github.com/WenHuaCao/interview-notes/blob/main/docs/scheduled-task.md">任务配置说明</a>。</p></div></aside></div><script>
+document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+  const status = button.parentElement!.querySelector<HTMLElement>('[role=status]')!;
+  try { await navigator.clipboard.writeText(document.getElementById(button.dataset.copy!)!.textContent!); status.textContent = ' 已复制'; }
+  catch { status.textContent = ' 请选中上方文字手动复制'; }
+}));
+</script></Layout>

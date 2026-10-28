@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import QuestionCard from '../components/QuestionCard.astro';
+import { catalog, monthKey, href } from '../lib/catalog';
+const { active, demo } = await catalog();
+const months = [...new Set(active.map(post => monthKey(post.data.createdAt)))];
+---
+<Layout title="时间归档" active="archive"><header class="page-heading"><p class="eyebrow">A TIMELINE OF CURIOSITY</p><h1>每个问题，<br />都有来时的路。</h1><p>按首次提问时间排列。追问继续生长，原来的时间坐标保持不变。</p>{demo && <span class="demo-label">当前展示示例记录</span>}</header><div class="archive-layout"><nav class="month-nav" aria-label="月份索引">{months.map(month => <a href={`#month-${month}`}><span>{month.replace('-', ' / ')}</span><b>{active.filter(post => monthKey(post.data.createdAt) === month).length}</b></a>)}<a href={href('guide/')}>如何添加记录 ↗</a></nav><div>{months.map(month => <section class="archive-month" id={`month-${month}`}><div class="section-heading"><h2>{month.split('-')[0]}<span class="month-label">年 {Number(month.split('-')[1])} 月</span></h2><span class="muted">{active.filter(post => monthKey(post.data.createdAt) === month).length} 道{demo ? '示例' : '提问'}</span></div><div class="question-list">{active.filter(post => monthKey(post.data.createdAt) === month).map(post => <QuestionCard post={post} />)}</div></section>)}</div></div></Layout>

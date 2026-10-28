@@ -1,0 +1,7 @@
+[
+  { "id": "javascript", "label": "JavaScript", "aliases": ["JS", "js", "ECMAScript"], "description": "从语言机制出发，解释代码为什么这样运行。" },
+  { "id": "browser", "label": "浏览器", "aliases": ["Browser", "浏览器原理"], "description": "理解事件循环、渲染与页面背后的运行机制。" },
+  { "id": "network", "label": "计算机网络", "aliases": ["网络", "HTTP", "http"], "description": "把请求、缓存与协议串成一条完整的链路。" },
+  { "id": "database", "label": "数据库", "aliases": ["DB", "MySQL", "SQL"], "description": "从索引到事务，理解数据如何被可靠地存取。" },
+  { "id": "system-design", "label": "系统设计", "aliases": ["架构设计", "分布式"], "description": "围绕约束、权衡和故障，练习设计可解释的系统。" }
+]
